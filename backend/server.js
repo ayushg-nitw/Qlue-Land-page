@@ -102,50 +102,218 @@ const waitlistSchema = new mongoose.Schema({
 const Waitlist = mongoose.model('Waitlist', waitlistSchema);
 
 
-// ✅ Updated: Email verification endpoint with /api prefix
+// // ✅ Updated: Email verification endpoint with /api prefix
+// app.post('/api/verify-email', (req, res) => {
+//   const { email } = req.body;
+  
+//   if (!email) {
+//     return res.status(400).json({
+//       success: false,
+//       error: 'Email is required'
+//     });
+//   }
+  
+//   const pythonScript = path.join(__dirname, 'email-check.py');
+//   const pythonProcess = spawn('python3', ['-u', pythonScript, email]);
+  
+//   let result = '';
+//   let error = '';
+
+//   pythonProcess.stdout.on('data', (data) => {
+//     result += data.toString();
+//   });
+
+//   pythonProcess.stderr.on('data', (data) => {
+//     error += data.toString();
+//   });
+
+//   pythonProcess.on('close', (code) => {
+//     if (code !== 0) {
+//       return res.status(500).json({ 
+//         success: false, 
+//         error: `Python script failed: ${error}` 
+//       });
+//     }
+    
+//     try {
+//       const parsedResult = JSON.parse(result.trim());
+//       res.json(parsedResult);
+//     } catch (e) {
+//       res.status(500).json({ 
+//         success: false, 
+//         error: 'Failed to parse result' 
+//       });
+//     }
+//   });
+// });
+
+
+
+// Enhanced /api/verify-email endpoint with detailed logging
 app.post('/api/verify-email', (req, res) => {
+  const startTime = Date.now();
+  console.log('🔍 /api/verify-email endpoint called at', new Date().toISOString());
+  console.log('📧 Request headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🌐 Request IP:', req.ip);
+  console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+  
   const { email } = req.body;
+  console.log('📧 Extracted email:', email);
   
   if (!email) {
+    console.error('❌ Email validation failed: Email is missing in request body');
     return res.status(400).json({
       success: false,
       error: 'Email is required'
     });
   }
   
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    console.error('❌ Email validation failed: Invalid email format for', email);
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid email format'
+    });
+  }
+  
+  console.log('✅ Email format validation passed for:', email);
+  
   const pythonScript = path.join(__dirname, 'email-check.py');
-  const pythonProcess = spawn('python3', ['-u', pythonScript, email]);
+  console.log('📁 Python script path:', pythonScript);
+  console.log('📁 Current working directory:', process.cwd());
+  console.log('📁 __dirname:', __dirname);
+  
+  // Check if Python script exists
+  const fs = require('fs');
+  if (!fs.existsSync(pythonScript)) {
+    console.error('❌ Python script not found at:', pythonScript);
+    return res.status(500).json({
+      success: false,
+      error: 'Email verification service unavailable'
+    });
+  }
+  
+  console.log('✅ Python script found, spawning process...');
+  console.log('🐍 Command: python3 -u', pythonScript, email);
+  
+  const pythonProcess = spawn('python3', ['-u', pythonScript, email], {
+    cwd: __dirname,
+    env: process.env
+  });
   
   let result = '';
   let error = '';
+  let hasResponded = false;
+  
+  // Set timeout for the Python process
+  const timeout = setTimeout(() => {
+    if (!hasResponded) {
+      console.error('⏰ Python script timeout after 30 seconds');
+      pythonProcess.kill('SIGTERM');
+      hasResponded = true;
+      res.status(500).json({
+        success: false,
+        error: 'Email verification timed out'
+      });
+    }
+  }, 30000); // 30 seconds timeout
 
   pythonProcess.stdout.on('data', (data) => {
-    result += data.toString();
+    const output = data.toString();
+    console.log('🐍 Python stdout chunk:', output);
+    result += output;
   });
 
   pythonProcess.stderr.on('data', (data) => {
-    error += data.toString();
+    const errorOutput = data.toString();
+    console.error('🐍 Python stderr chunk:', errorOutput);
+    error += errorOutput;
   });
 
-  pythonProcess.on('close', (code) => {
+  pythonProcess.on('error', (err) => {
+    console.error('❌ Python process error:', err);
+    clearTimeout(timeout);
+    if (!hasResponded) {
+      hasResponded = true;
+      res.status(500).json({
+        success: false,
+        error: 'Failed to start email verification process'
+      });
+    }
+  });
+
+  pythonProcess.on('close', (code, signal) => {
+    clearTimeout(timeout);
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    console.log('🐍 Python script closed');
+    console.log('📊 Exit code:', code);
+    console.log('📊 Signal:', signal);
+    console.log('⏱️  Duration:', duration + 'ms');
+    console.log('📝 Full stdout result:', result);
+    console.log('📝 Full stderr error:', error);
+    
+    if (hasResponded) {
+      console.log('⚠️  Response already sent (timeout case)');
+      return;
+    }
+    
     if (code !== 0) {
+      console.error('❌ Python script failed with exit code:', code);
+      console.error('❌ Python script error output:', error);
+      hasResponded = true;
       return res.status(500).json({ 
         success: false, 
-        error: `Python script failed: ${error}` 
+        error: `Python script failed: ${error}`,
+        exit_code: code
       });
     }
     
+    console.log('✅ Python script completed successfully');
+    console.log('🔍 Attempting to parse result...');
+    
     try {
-      const parsedResult = JSON.parse(result.trim());
-      res.json(parsedResult);
-    } catch (e) {
+      const trimmedResult = result.trim();
+      console.log('🔍 Trimmed result:', trimmedResult);
+      
+      if (!trimmedResult) {
+        console.error('❌ Empty result from Python script');
+        hasResponded = true;
+        return res.status(500).json({
+          success: false,
+          error: 'Empty response from email verification service'
+        });
+      }
+      
+      const parsedResult = JSON.parse(trimmedResult);
+      console.log('✅ Successfully parsed Python script result:', JSON.stringify(parsedResult, null, 2));
+      
+      hasResponded = true;
+      res.json({
+        ...parsedResult,
+        processing_time_ms: duration
+      });
+      
+    } catch (parseError) {
+      console.error('❌ Failed to parse Python script result');
+      console.error('❌ Parse error:', parseError.message);
+      console.error('❌ Raw result that failed to parse:', JSON.stringify(result));
+      
+      hasResponded = true;
       res.status(500).json({ 
         success: false, 
-        error: 'Failed to parse result' 
+        error: 'Invalid response format from email verification service',
+        raw_output: result.substring(0, 500) // Limit output size
       });
     }
   });
+
+  console.log('🚀 Python process spawned, waiting for results...');
 });
+
 
 // ✅ Updated: MongoDB endpoint for saving to waitlist with /api prefix
 app.post('/api/join-waitlist', async (req, res) => {
