@@ -15,10 +15,9 @@ const EnterEmailButton = () => {
   };
 
   // Email verification function (same as before)
-  let apiUrl;
-  if(process.env.NODE_ENV !== 'production') apiUrl = 'http://localhost:5000';
-  else apiUrl = process.env.REACT_APP_API_URL;
-
+   let apiUrl;
+  if(import.meta.env.VITE_NODE_ENV !== 'production') apiUrl = 'http://localhost:5000';
+  else apiUrl = import.meta.env.VITE_API_URL;
   
   const verifyEmail = async (email) => {
     try {
