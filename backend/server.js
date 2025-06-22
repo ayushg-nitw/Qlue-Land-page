@@ -17,6 +17,8 @@ const __dirname = dirname(__filename);
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -38,7 +40,8 @@ app.use(helmet({
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP'
+  message: 'Too many requests from this IP',
+  trustProxy: true
 });
 
 const apiLimiter = rateLimit({
@@ -55,16 +58,7 @@ app.use(express.json({ limit: '10mb' }));
 
 app.disable('x-powered-by');
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist'), {
-    setHeaders: (res, path) => {
-      // Set security headers for static files
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-XSS-Protection', '1; mode=block');
-    }
-  }));
-}
+
 // MongoDB connection with security
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
@@ -78,8 +72,6 @@ mongoose.connect(mongoUri)
   console.error('❌ MongoDB connection error:', err);
   process.exit(1);
 });
-
-
 
 
 // Define Waitlist Schema
@@ -108,10 +100,6 @@ const waitlistSchema = new mongoose.Schema({
 });
 
 const Waitlist = mongoose.model('Waitlist', waitlistSchema);
-
-
-
-
 
 
 // ✅ Updated: Email verification endpoint with /api prefix
@@ -302,11 +290,6 @@ app.get('/api/health', (req, res) => {
 });
 
 
-app.get('/{*any}', (req, res)=>{
-   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
-
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -317,6 +300,7 @@ app.use((err, req, res, next) => {
       : err.message 
   });
 });
+
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
