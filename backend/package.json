@@ -8,5 +8,9 @@
     "helmet": "^8.1.0",
     "mongoose": "^8.16.0",
     "path": "^0.12.7"
+  },
+   "scripts": {
+    "build": "pip install -r requirements.txt",
+    "start": "node server.js"
   }
 }
