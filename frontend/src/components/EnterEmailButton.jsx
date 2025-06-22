@@ -15,9 +15,9 @@ const EnterEmailButton = () => {
   };
 
   // Email verification function (same as before)
-   let apiUrl;
-  if(import.meta.env.VITE_NODE_ENV !== 'production') apiUrl = 'http://localhost:5000';
-  else apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production' 
+  ? 'http://localhost:5000' 
+  : '';
   
   const verifyEmail = async (email) => {
     try {

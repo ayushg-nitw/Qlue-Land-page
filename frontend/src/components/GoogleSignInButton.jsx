@@ -8,9 +8,9 @@ import "react-toastify/dist/ReactToastify.css";
 const GoogleSignInButton = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-   let apiUrl;
-  if(import.meta.env.VITE_NODE_ENV !== 'production') apiUrl = 'http://localhost:5000';
-  else apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production' 
+  ? 'http://localhost:5000' 
+  : '';
 
   const handleClick = async () => {
     setIsSubmitting(true);
