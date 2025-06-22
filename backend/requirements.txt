@@ -1,3 +1,5 @@
 nest_asyncio==1.5.8
 verify-email
-dnspython
+json 
+re
+sys
