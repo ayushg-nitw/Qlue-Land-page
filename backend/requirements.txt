@@ -1,4 +1,4 @@
-nest_asyncio==1.5.8
+nest_asyncio
 verify-email
 json 
 re
