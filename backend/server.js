@@ -1,5 +1,6 @@
 import express from 'express';
 import { spawn } from 'child_process';
+import fs from 'fs';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -148,8 +149,7 @@ const Waitlist = mongoose.model('Waitlist', waitlistSchema);
 // });
 
 
-
-// Enhanced /api/verify-email endpoint with detailed logging
+/// Enhanced /api/verify-email endpoint with ES modules syntax
 app.post('/api/verify-email', (req, res) => {
   const startTime = Date.now();
   console.log('🔍 /api/verify-email endpoint called at', new Date().toISOString());
@@ -185,8 +185,7 @@ app.post('/api/verify-email', (req, res) => {
   console.log('📁 Current working directory:', process.cwd());
   console.log('📁 __dirname:', __dirname);
   
-  // Check if Python script exists
-  const fs = require('fs');
+  // Check if Python script exists (using ES modules syntax)
   if (!fs.existsSync(pythonScript)) {
     console.error('❌ Python script not found at:', pythonScript);
     return res.status(500).json({
@@ -218,7 +217,7 @@ app.post('/api/verify-email', (req, res) => {
         error: 'Email verification timed out'
       });
     }
-  }, 30000); // 30 seconds timeout
+  }, 30000);
 
   pythonProcess.stdout.on('data', (data) => {
     const output = data.toString();
@@ -306,13 +305,14 @@ app.post('/api/verify-email', (req, res) => {
       res.status(500).json({ 
         success: false, 
         error: 'Invalid response format from email verification service',
-        raw_output: result.substring(0, 500) // Limit output size
+        raw_output: result.substring(0, 500)
       });
     }
   });
 
   console.log('🚀 Python process spawned, waiting for results...');
 });
+
 
 
 // ✅ Updated: MongoDB endpoint for saving to waitlist with /api prefix
