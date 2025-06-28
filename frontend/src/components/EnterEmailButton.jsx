@@ -8,53 +8,17 @@ const EnterEmailButton = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-
   const isValidEmail = (email) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(email);
   };
 
-  // Email verification function (same as before)
-const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production' 
-  ? 'http://localhost:5000' 
-  : '';
-  
-  const verifyEmail = async (email) => {
-    try {
-      const response = await fetch(`${apiUrl}/api/verify-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      
-      const result = await response.json();
-      return result.is_valid;
-    } catch (error) {
-      console.error('Email verification failed:', error);
-      return false;
-    }
-  };
-
-
-  const joinWaitlist = async (email) => {
-    try {
-      const response = await fetch(`${apiUrl}/api/join-waitlist`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Failed to join waitlist:', error);
-      return { success: false, error: 'Network error' };
-    }
-  };
+  const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production' 
+    ? 'http://localhost:5000' 
+    : '';
 
   const handleClick = async () => {
-
-      setIsFocused(true);
+    setIsFocused(true);
 
     if (!email || !isValidEmail(email)) {
       toast.error("Please enter a valid email!", {
@@ -71,40 +35,32 @@ const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production'
     setIsSubmitting(true);
 
     try {
-      // Step 1: Verify email
-      const isEmailValid = await verifyEmail(email);
-      
-      if (!isEmailValid) {
-        toast.error("Email does not exist!", {
-          position: "top-center",
-          autoClose: 3000,
-          style: { background: "#ffffff", color: "#000000" },
-        });
-        setIsSubmitting(false);
-        setEmail("");
-        setIsFocused(false);
-        return;
-      }
+      const response = await fetch(`${apiUrl}/api/verify-and-save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
 
-      // Step 2: Save to MongoDB
-      const result = await joinWaitlist(email);
-      
+      const result = await response.json();
+
       if (result.success) {
         if (result.exists) {
-          toast.info("You're already on the waitlist!", {
+          toast.info(result.message, {
             position: "top-center",
             autoClose: 3000,
             style: { background: "#ffffff", color: "#000000" },
           });
         } else {
-          toast.success("Joined! Welcome to the Qlue Club.", {
+          toast.success(result.message, {
             position: "top-center",
             autoClose: 3000,
             style: { background: "#ffffff", color: "#000000" },
           });
         }
       } else {
-        toast.error("Failed to join waitlist. Please try again.", {
+        toast.error(result.error || "Something went wrong!", {
           position: "top-center",
           autoClose: 3000,
           style: { background: "#ffffff", color: "#000000" },
@@ -113,7 +69,7 @@ const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production'
 
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Something went wrong. Please try again.", {
+      toast.error("Network error. Please try again.", {
         position: "top-center",
         autoClose: 3000,
         style: { background: "#ffffff", color: "#000000" },

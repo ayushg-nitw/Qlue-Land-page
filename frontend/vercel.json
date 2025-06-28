@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://qlue-land-page.onrender.com/api/$1"
-    }
-  ]
-}

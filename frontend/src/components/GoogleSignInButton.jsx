@@ -62,7 +62,7 @@ const apiUrl = import.meta.env.VITE_NODE_ENV !== 'production'
       console.error("Google Sign-In Error:", error.message);
 
       if (error.code === "auth/popup-closed-by-user") {
-        toast.warning("Sign-in was canceled. Try again!", {
+        toast.warning("Sign-in was cancelled. Try again!", {
           position: "top-center",
           autoClose: 3000,
           style: { background: "#ffffff", color: "#000000" },
