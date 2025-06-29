@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import axios from 'axios';
 import dotenv from 'dotenv';
+import nodemailer from 'nodemailer'
 
 dotenv.config( {path: '../.env'} );
 
@@ -40,6 +41,16 @@ const emailSchema = new mongoose.Schema({
 });
 
 const Email = mongoose.model('Waitlist', emailSchema);
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 // Email verification function using axios
 const verifyEmail = async (email) => {
@@ -120,6 +131,68 @@ app.post('/api/verify-and-save', async (req, res) => {
 
     const newEmail = new Email({ email: trimmedEmail });
     await newEmail.save();
+
+
+        // Send welcome email to new user
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Welcome to Qlue Club!',
+        html: `
+       <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Qlue</title>
+  </head>
+  <body style="font-family: 'Helvetica Neue', sans-serif; background-color: #fefefe; color: #111; margin: 0; padding: 30px;">
+    <div style="max-width: 600px; margin: auto;">
+      <p style="font-size: 18px; line-height: 1.6;">Hey you,</p>
+
+      <p style="font-size: 18px; line-height: 1.6;">
+        You really gave us your email?<br />
+        <strong>Bold move.</strong><br />
+        We like that.
+      </p>
+
+      <p style="font-size: 18px; line-height: 1.6;">
+        Welcome to <strong>Qlue Club</strong> — where new-age brands thrive, Gen-Zs start fashion cults, and people occasionally ghost emails like this one (but not this one — this one’s iconic 😌).
+      </p>
+
+      <p style="font-size: 18px; line-height: 1.6;">
+        We’re building a space where fashion speaks louder than your ex’s opinions — and is twice as disruptive.
+      </p>
+
+      <p style="font-size: 18px; font-style: italic; line-height: 1.6;">The world’s lost in trends. We drop Qlues.</p>
+
+      <p style="font-size: 18px; line-height: 1.6;">
+        You’re early.<br />
+        You’re in.<br />
+        You matter.
+      </p>
+
+      <p style="font-size: 18px; line-height: 1.6;">Sit tight.<br />We’re about to drop some serious heat.</p>
+
+      <p style="font-size: 18px; line-height: 1.6;">
+        And when it happens, you’ll be the first to say:<br />
+        <strong>“I was here before it was cool.”</strong>
+      </p>
+
+      <p style="font-size: 18px; line-height: 1.6;">
+        Let’s go.<br />
+        Let’s wear things people don’t understand... <em>yet.</em>
+      </p>
+
+      <p style="font-size: 16px; margin-top: 40px;">Regards,<br /><strong>Coming soon, Qlue</strong></p>
+    </div>
+  </body>
+</html>
+        `
+      };
+      
+      // Send the email
+      await transporter.sendMail(mailOptions);
     
     res.json({ 
       success: true, 
